@@ -1,5 +1,5 @@
 # Huffman copression/coding example.
-# 1.0
+# 1.1
 # 29.4.2019 Edvard Busck-Nielsen
 # A program that takes in text as input or from a text file and outputs stats on how the file would be if it where to be
 # compressed using Huffman coding.
@@ -8,7 +8,6 @@
 
 
 import os
-import sys
 
 def text_to_bits(text, encoding='utf-8', errors='surrogatepass'):
     bits = bin(int.from_bytes(text.encode(encoding, errors), 'big'))[2:]
@@ -67,6 +66,7 @@ def compress(raw_data):
     #print(tree_history)
     print ("RESULT")
     print ("Tree top: "+str(tree_top)+""+str(tree[tree_top]))
+    print (tree_history)
     print ("Stats: ")
     end = end - start
     print ("Compression time: ")
@@ -99,6 +99,7 @@ def compress(raw_data):
     percentage = 100-percentage
     if percentage > 100:
         percentage = "File Could Not Be Compressed! "
+    print(tree_history_bin)
     return percentage
 
 
