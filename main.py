@@ -1,5 +1,5 @@
 # Huffman copression/coding example.
-# 1.1
+# 1.2
 # 29.4.2019 Edvard Busck-Nielsen
 # A program that takes in text as input or from a text file and outputs stats on how the file would be if it where to be
 # compressed using Huffman coding.
@@ -8,6 +8,21 @@
 
 
 import os
+
+def decompress(huffman_tree, binary):
+    text = ""
+    branch = list(huffman_tree)[-1]
+    branch = huffman_tree[branch]
+    for chr in binary:
+        chr = int(chr)
+        current = branch[chr]
+        if len(current) == 1:
+            text = text+current
+            branch = list(huffman_tree)[-1]
+            branch = huffman_tree[branch]
+        else:
+            branch = huffman_tree[current]
+    return text
 
 def text_to_bits(text, encoding='utf-8', errors='surrogatepass'):
     bits = bin(int.from_bytes(text.encode(encoding, errors), 'big'))[2:]
@@ -25,8 +40,11 @@ def compress(raw_data):
 
     appearences = []
     tree = {}
-    placement = 0
     tree_history = []
+    huffman_tree = {}
+    tmp_huffman_tree = {}
+
+    compression_tree = {}
 
     # Indexes the raw data and counts appearences of characters
     for chr in raw_data:
@@ -37,80 +55,122 @@ def compress(raw_data):
             tree[chr] = 1
         else:
             print ("Error indexing")
+
     tree = sort_dict(tree)
-    tmp_tree_history = []
+
+    most_common = list(tree)[-1]
+    least_common = list(tree)[0]
+
+    tmp_tree_history = {}
+
     for key in tree:
-        tmp_tree_history.append(str(key))
+        tmp_tree_history[str(key)] = str(tree[key])
     tree_history.append(tmp_tree_history)
 
-    while len(tree) >= 2:
-        first_node = list(tree)[placement]
-        next_node = list(tree)[placement+1]
+    while len(tree_history[0]) > 1:
+        tmp_tree_history = {}
 
-        tmp_tree_history = []
-        tmp_tree_history.append(str(first_node)+str(next_node))
-        if len(tree) > 2:
-            for index,node in enumerate(tree):
-                if index != 0 and index != 1:
-                    tmp_node = list(tree)[int(placement+1)+1]
-                    tmp_tree_history.append(str(tmp_node))
-        tree_history.append(tmp_tree_history)
+        node_one = list(tree_history[0])[0]
+        node_next = list(tree_history[0])[0+1]
+        tmp_node = str(node_one+node_next)
+        tmp_node_val = int(tree[node_one])+int(tree[node_next])
 
-        tree[first_node] = tree[next_node] + tree[first_node]
-        tree[str(first_node)+str(next_node)] = tree.pop(first_node)
-        del tree[next_node]
-    else:
-        print ("")
-    end = time.time()
-    tree_top = list(tree)[0]
-    #print(tree_history)
-    print ("RESULT")
-    print ("Tree top: "+str(tree_top)+""+str(tree[tree_top]))
-    print (tree_history)
-    print ("Stats: ")
-    end = end - start
-    print ("Compression time: ")
-    print (str(end)+" seconds.")
-    print (str(end*1000)+" milliseconds.")
-    print ("Most common character: "+str(tree_history[0][-1]))
-    print ("Least common character: "+str(tree_history[0][0]))
-    print ("Number of bits before compression: "+str(len(raw_data)*8))
-    tree_history = tree_history[0]
-    tree_history = tree_history[::-1]
-    tree_history_bin = {}
-    prefix = ""
-    other_num = "0"
-    for chr in tree_history:
-        if other_num == "1":
-            tmp_bin = prefix + "0"
-            other_num = "0"
-        elif other_num == "0":
-            tmp_bin = prefix + "1"
-            other_num = "1"
-            prefix = prefix+"0"
-        tree_history_bin[chr] = tmp_bin
+        del tree[node_one]
+        del tree[node_next]
 
-    compressed_bits = ""
+        tree[tmp_node] = tmp_node_val
+        tree = sort_dict(tree)
+
+        tree_history[0][tmp_node] = tmp_node_val
+        del tree_history[0][node_one]
+        del tree_history[0][node_next]
+
+        tmp_huffman_tree = {}
+        tmp_huffman_tree[0] = node_one
+        tmp_huffman_tree[1] = node_next
+        huffman_tree[tmp_node] = tmp_huffman_tree
+
+        compression_tree[node_one] = "0"
+        compression_tree[node_next] = "1"
+
+    root = str(list(tree_history[0])[0])+str(tree[list(tree_history[0])[0]])
+
+    # Compressing
+    bits = []
+    bits_str = ""
     for chr in raw_data:
-        compressed_bits = compressed_bits+tree_history_bin[chr]
-    print ("Number of bits after compression: "+str(len(compressed_bits)))
-    percentage = 100*len(compressed_bits)
-    percentage = percentage/len(text_to_bits(raw_data))
-    percentage = 100-percentage
-    if percentage > 100:
-        percentage = "File Could Not Be Compressed! "
-    print(tree_history_bin)
-    return percentage
+        tmp_bits = []
+        parent = chr
+        #print ("Chr: "+parent)
+        while parent+str(len(raw_data)) != root:
+            node = parent
+            position = 0
+            next_position = 0
+            next_node = ""
+            for index,key in enumerate(compression_tree):
+                if key == node:
+                    position = index
+            next_position = position-1
 
+            tmp_bits.append(compression_tree[node])
+            #print(tmp_bits)
+
+            #node = list(compression_tree)[position]
+            next_node = list(compression_tree)[next_position]
+
+            if node+next_node in compression_tree:
+                parent = node+next_node
+            elif node+next_node+str(len(raw_data)) == root:
+                break
+            elif next_node+node in compression_tree:
+                parent = next_node+node
+            else:
+                if next_node+node+str(len(raw_data)) == root:
+                    break
+                next_position = position+1
+                next_node = list(compression_tree)[next_position]
+                if node+next_node in compression_tree:
+                    parent = node+next_node
+                elif node+next_node+str(len(raw_data)) == root:
+                    break
+                elif next_node+node in compression_tree:
+                    parent = next_node+node
+                elif next_node+node+str(len(raw_data)) == root:
+                    break
+        tmp_bits = tmp_bits[::-1]
+        for chr in tmp_bits:
+            bits.append(chr)
+    for chr in bits:
+        bits_str = bits_str+chr
+    print ("")
+    print ("\033[1m\033[4mBefore:\033[0m\033[2m"+"("+str(len(text_to_bits(raw_data)))+" bits)\033[0m")
+    print ("\033[91m"+text_to_bits(raw_data)+"\033[0m")
+    print ("\033[1m\033[4mAfter:\033[0m\033[2m"+"("+str(len(bits_str))+" bits)\033[0m")
+    print ("\033[92m"+bits_str+"\033[0m")
+
+    raw_data_lenght = len(raw_data)*8
+    percentage = 100*len(bits_str)
+    percentage = percentage/raw_data_lenght
+
+    end = time.time()
+
+
+    end = end - start
+    print ("")
+    print("\033[1mDecompressed: \033[0m"+decompress(huffman_tree,bits_str))
+    print ("")
+    print ("\033[1m\033[4mCompression time: \033[0m\033[94m")
+    print (str(end)+"\033[0m\033[1m seconds.\033[94m")
+    print (str(end*1000)+"\033[0m\033[1m milliseconds.\033[0m")
+    print ("")
+    print("\033[1mMost common character: \033[94m"+most_common)
+    print("\033[0m\033[1mLeast common character: \033[94m"+least_common)
+    print ("")
+    print("\033[0m\033[1mTree Root: \033[94m"+root+"\033[0m")
+    print ("")
+    return percentage
 
 os.system("figlet H u f f m a n")
 print ("")
-action = input("(f) file or (i) input?")
-if action == "i":
-    raw_data = input("Text: ")
-else:
-    with open('data.txt', 'r') as f:
-        raw_data = f.readlines()
-        raw_data = ''.join(raw_data)
-        raw_data = raw_data.replace('\n', ' ').replace('\r', '')
-print ("Compressed to "+str(compress(raw_data))+'% smaller')
+raw_data = input("\033[1mText: \033[0m")
+print ("\033[1mCompressed to \033[92m"+str(compress(raw_data))+'% \033[1msmaller\033[0m')

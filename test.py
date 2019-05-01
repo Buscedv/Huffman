@@ -1,5 +1,5 @@
 # Huffman copression/coding example.
-# 1.1
+# 1.2
 # 29.4.2019 Edvard Busck-Nielsen
 # A program that takes in text as input or from a text file and outputs stats on how the file would be if it where to be
 # compressed using Huffman coding.
@@ -21,6 +21,7 @@ def sort_dict(dict):
 
 def compress(raw_data):
     import time
+    
     start = time.time()
 
     appearences = []
@@ -30,7 +31,6 @@ def compress(raw_data):
     tmp_huffman_tree = {}
 
     compression_tree = {}
-    tmp_compression_tree = {}
 
     # Indexes the raw data and counts appearences of characters
     for chr in raw_data:
