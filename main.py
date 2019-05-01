@@ -1,5 +1,5 @@
 # Huffman compression/coding example.
-# 1.3
+# 1.4
 # 29.4.2019 Edvard Busck-Nielsen
 # A program that takes in text as input or from a text file and outputs stats on how the file would be
 # like if it was compressed using Huffman coding.
@@ -8,6 +8,7 @@
 
 
 import os
+import yaml
 
 # Function for decompressing.
 def decompress(huffman_tree, binary):
@@ -225,10 +226,9 @@ def compress(raw_data):
     percentage = 100*len(bits_str)
     percentage = percentage/raw_data_lenght
     percentage = 100-percentage
-    print ("gg")
 
     # Asks if the user want to see the bits or just how many bits there are.
-    action = input("Done compressing do you want to show the bits before and after? y/n: ")
+    action = input("\033[1mDone compressing, do you want to show the bits before and after? y/n: \033[0m")
     if action == "y":
         print ("")
         print ("\033[1m\033[4mBefore:\033[0m\033[2m"+"("+str(len(text_to_bits(raw_data)))+" bits)\033[0m")
@@ -243,7 +243,7 @@ def compress(raw_data):
     # Prints out results.
     print ("")
     # Asks if the user wants to decompress the text.
-    action = input("Do you want to decompress and print out result? y/n: ")
+    action = input("\033[1mDo you want to decompress and print out result? y/n: \033[0m")
     if action == "y":
         # decompresses the text using the huffman_tree and the compressed bits.
         print("\033[1mDecompressed: \033[0m"+decompress(huffman_tree,bits_str))
@@ -257,7 +257,7 @@ def compress(raw_data):
         print ("")
         print("\033[0m\033[1mTree Root: \033[94m"+root+"\033[0m")
         print ("")
-        return percentage
+        return percentage,huffman_tree,bits_str
     else:
         print ("")
         print ("\033[1m\033[4mCompression time: \033[0m\033[94m")
@@ -269,23 +269,72 @@ def compress(raw_data):
         print ("")
         print("\033[0m\033[1mTree Root: \033[94m"+root+"\033[0m")
         print ("")
-        return percentage
+        return percentage,huffman_tree,bits_str
 
-# Startup
-os.system("figlet H u f f m a n")
-print ("")
-# Asks for file or line input.
-action = input("\033[1m[f]ile or [i]nput? \033[0m")
-if action == "i":
-    # Line input
-    raw_data = input("\033[1mText: \033[0m")
-elif action == "f":
-    # File (data.txt) input
-    with open('data.txt', 'r') as file:
-        data = file.read().replace('\n', '')
-        raw_data = data
-else:
-    raw_data = input("\033[1mText: \033[0m")
+# Start function for returning to 'menu'
+def startup():
+    os.system("clear")
+    # Startup
+    os.system("figlet H u f f m a n")
+    print ("")
+    # Asks if the user wants to compress or decompress.
+    action = input("\033[1m[c]ompress or [d]compress? (Ctrl+C to quit) \033[0m")
+    if action == "d":
+        file_name = input("\033[1mFile name (without .txt): \033[0m")
+        huffman_tree_file_name = input("\033[1mHuffman tree file name (blank for _tree): \033[0m")
 
-# Compresses and gets percentage result.
-print ("\033[1mCompressed to \033[92m"+str(compress(raw_data))+'% \033[1msmaller\033[0m')
+        if huffman_tree_file_name == "":
+            huffman_tree_file_name = file_name+"_tree.txt"
+
+        file_name = file_name+".txt"
+
+        with open(file_name, 'r') as binary_file:
+            bits = binary_file.read().replace('\n', ' ')
+
+        with open(huffman_tree_file_name, 'r') as huffman_tree_file:
+            huffman_tree_str = huffman_tree_file.read().replace('\n', ' ')
+        huffman_tree = yaml.load(huffman_tree_str, Loader=yaml.FullLoader)
+        print(decompress(huffman_tree,bits))
+        tmp = input("continue...")
+        startup()
+    else:
+        # Asks for file or line input.
+        action = input("\033[1m[f]ile or [i]nput? \033[0m")
+        if action == "i":
+            # Line input
+            raw_data = input("\033[1mText: \033[0m")
+        elif action == "f":
+            # Asks for file name
+            file_name = input("\033[1mFile name (without .txt): \033[0m")
+
+            if file_name == "":
+                file_name = "data.txt"
+            else:
+                file_name = file_name+".txt"
+
+            with open(file_name, 'r') as file:
+                data = file.read().replace('\n', ' ')
+                raw_data = data
+        else:
+            raw_data = input("\033[1mText: \033[0m")
+
+        # Compresses and gets percentage result.
+        percentage, huffman_tree, bits = compress(raw_data)
+        print ("\033[1mCompressed to \033[92m"+str(percentage)+'% \033[1msmaller\033[0m')
+        print("")
+
+        # Asks if the user wants to save the compressed file.
+        action = input("\033[1mDo you want to save the compressed file? y/n: \033[0m")
+        if action == "y":
+            name = input("\033[1mOutput file name (without .txt): \033[0m")
+
+            with open(name+".txt", "w+") as f:
+                f.write(bits)
+            with open(name+"_tree.txt", "w+") as f:
+                f.write(str(huffman_tree))
+
+            print("Files: "+name+".txt (bits) & "+name+"_tree.txt (huffman_tree) saved.")
+            tmp = input("continue...")
+            startup()
+
+startup()
