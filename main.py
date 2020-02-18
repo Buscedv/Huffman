@@ -281,7 +281,7 @@ def startup():
     action = input("\033[1m[c]ompress or [d]compress? (Ctrl+C to quit) \033[0m")
     if action == "d":
         file_name = input("\033[1mFile name (without .txt): \033[0m")
-        huffman_tree_file_name = input("\033[1mHuffman tree file name (blank for _tree): \033[0m")
+        huffman_tree_file_name = input("\033[1mHuffman tree file name (blank for [file name]_tree): \033[0m")
 
         if huffman_tree_file_name == "":
             huffman_tree_file_name = file_name+"_tree.txt"
